@@ -1,4 +1,4 @@
-package main
+package singleton_test
 
 import (
 	"fmt"
