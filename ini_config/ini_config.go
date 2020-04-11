@@ -3,13 +3,74 @@ package iniconfig
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"reflect"
 	"strconv"
 	"strings"
 )
 
+func MarshalToFile(filename string, data interface{}) (err error) {
+	result, err := Marshal(data)
+	if err != nil {
+		return
+	}
+	return ioutil.WriteFile(filename, result, 0755)
+}
+
 func Marshal(data interface{}) (result []byte, err error) {
+	typeInfo := reflect.TypeOf(data)
+	if typeInfo.Kind() != reflect.Struct {
+		err = errors.New("please pass struct")
+		return
+	}
+
+	var conf []string
+
+	valueInfo := reflect.ValueOf(data)
+	for i := 0; i < typeInfo.NumField(); i++ {
+		sectionField := typeInfo.Field(i)
+		sectionVal := valueInfo.Field(i)
+
+		fieldType := sectionField.Type
+		if fieldType.Kind() != reflect.Struct {
+			continue
+		}
+
+		tagVal := sectionField.Tag.Get("ini")
+		if len(tagVal) == 0 {
+			tagVal = sectionField.Name
+		}
+
+		section := fmt.Sprintf("\n[%s]\n", tagVal)
+		conf = append(conf, section)
+
+		for j := 0; j < fieldType.NumField(); j++ {
+			keyField := fieldType.Field(j)
+			fieldTagVal := keyField.Tag.Get("ini")
+			if len(fieldTagVal) == 0 {
+				fieldTagVal = keyField.Name
+			}
+
+			valField := sectionVal.Field(j)
+			item := fmt.Sprintf("%s=%v\n", fieldTagVal, valField.Interface())
+			conf = append(conf, item)
+		}
+	}
+
+	for _, val := range conf {
+		byteVal := []byte(val)
+		result = append(result, byteVal...)
+	}
 	return
+}
+
+func UnMarshalFile(filename string, result interface{}) (err error) {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return
+	}
+
+	return UnMarshal(data, result)
 }
 
 func UnMarshal(data []byte, result interface{}) (err error) {

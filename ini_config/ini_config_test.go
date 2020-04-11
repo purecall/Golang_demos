@@ -36,5 +36,30 @@ func TestIniConfig(t *testing.T) {
 		t.Errorf("unmarshal failed, err:%v", err)
 		return
 	}
-	t.Logf("unmarshal success, config, %#v", conf)
+	t.Logf("unmarshal success, config: %#v", conf)
+
+	confData, err := Marshal(conf)
+	if err != nil {
+		t.Errorf("marshal failed, err:%v", err)
+	}
+	t.Logf("marshal success, config:%s", string(confData))
+}
+
+func TestIniConfigFile(t *testing.T) {
+	filename := "C:/logs/test.conf"
+	var conf Config
+	conf.ServerConf.Ip = "localhost"
+	conf.ServerConf.Port = 88888
+	err := MarshalToFile(filename, conf)
+	if err != nil {
+		t.Errorf("marshal failed, err:%v", err)
+		return
+	}
+
+	var conf2 Config
+	err = UnMarshalFile(filename, &conf)
+	if err != nil {
+		t.Errorf("unmarshal failed, err:%v", err)
+	}
+	t.Logf("unmarshal success, conf: %#v", conf2)
 }
