@@ -99,11 +99,11 @@ func testUpdateData() {
 		return
 	}
 
-	afferted, err := result.RowsAffected()
+	affected, err := result.RowsAffected()
 	if err != nil {
 		fmt.Printf("get affected rows failed, err:%v\n", err)
 	}
-	fmt.Printf("update db successfully, affected rows:%d\n", afferted)
+	fmt.Printf("update db successfully, affected rows:%d\n", affected)
 }
 
 func testDeleteData() {
@@ -202,6 +202,51 @@ func testPrepareInsertData() {
 	fmt.Printf("id is %d\n", id)
 }
 
+/* Mysql 事务
+应用场景：
+1. 同时更新，多个表
+2. 同时更新多行数据
+
+事务的ACID：
+1. 原子性：要么都成功，要么都失败
+2. 一致性：数据是一致的，不会错乱
+3. 隔离性：多个事务的修改，它们之间是隔离的
+4. 持久性：不会因为程序的异常错误而导致数据丢失
+*/
+
+func testTrans() {
+	conn, err := DB.Begin()
+	if err != nil {
+		if conn != nil {
+			conn.Rollback()
+		}
+		fmt.Printf("begin failed, err:%v\n", err)
+		return
+	}
+
+	sqlstr := "update user set age = 22 where id = ?"
+	_, err = conn.Exec(sqlstr, 1)
+	if err != nil {
+		conn.Rollback()
+		fmt.Printf("exec sql:%s failed, err:%v\n", sqlstr, err)
+		return
+	}
+
+	sqlstr = "update user set age = 102 where id = ?"
+	_, err = conn.Exec(sqlstr, 2)
+	if err != nil {
+		conn.Rollback()
+		fmt.Printf("exec sql:%s failed, err:%v\n", sqlstr, err)
+		return
+	}
+	err = conn.Commit()
+	if err != nil {
+		fmt.Printf("commit failed, err:%v\n", err)
+		conn.Rollback()
+		return
+	}
+}
+
 func main() {
 	err := initDb()
 	if err != nil {
@@ -215,5 +260,6 @@ func main() {
 	//testUpdateData()
 	//testDeleteData()
 	//testPrepareQueryData()
-	testPrepareInsertData()
+	//testPrepareInsertData()
+	testTrans()
 }
