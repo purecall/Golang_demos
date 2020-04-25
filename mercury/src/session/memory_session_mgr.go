@@ -11,7 +11,7 @@ type MemorySessionMgr struct {
 	rwlock     sync.RWMutex
 }
 
-func NewMemoryMgr() SessionMgr {
+func NewMemorySessionMgr() SessionMgr {
 	sr := &MemorySessionMgr{
 		sessionMap: make(map[string]Session, 1024),
 	}
